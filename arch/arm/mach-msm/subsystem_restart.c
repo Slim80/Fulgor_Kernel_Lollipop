@@ -832,6 +832,12 @@ int subsystem_restart_dev(struct subsys_device *dev)
 	}
 #endif
 
+	if (strncmp(name, _order_8x60_all[2], 4) == 0) {
+		enable_ramdumps = sec_debug_is_enabled()? 1 : 0;
+		dev->restart_level = RESET_SOC;
+		pr_info("Restart sequence requested for %s, restart_level = %s, enable_ramdumps = %d. \n",
+				name, restart_levels[dev->restart_level], enable_ramdumps);
+	}
 	pr_info("Restart sequence requested for %s, restart_level = %s.\n",
 		name, restart_levels[dev->restart_level]);
 
