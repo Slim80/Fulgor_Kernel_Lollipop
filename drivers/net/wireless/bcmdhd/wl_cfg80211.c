@@ -5159,6 +5159,8 @@ wl_cfg80211_cancel_remain_on_channel(struct wiphy *wiphy,
 	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
 	s32 err = 0;
 
+	RETURN_EIO_IF_NOT_UP(cfg);
+
 #if defined(WL_CFG80211_P2P_DEV_IF)
 	if (cfgdev->iftype == NL80211_IFTYPE_P2P_DEVICE) {
 		WL_DBG((" enter ) on P2P dedicated discover interface\n"));
@@ -5604,8 +5606,12 @@ wl_cfg80211_send_action_frame(struct wiphy *wiphy, struct net_device *dev,
 	}
 
 	/* Abort P2P listen */
-	wl_cfgp2p_set_p2p_mode(cfg, WL_P2P_DISC_ST_SCAN, 0, 0,
-		wl_to_p2p_bss_bssidx(cfg, P2PAPI_BSSCFG_DEVICE));
+	if (discover_cfgdev(cfgdev, cfg)) {
+		if (cfg->p2p_supported && cfg->p2p) {
+			wl_cfgp2p_set_p2p_mode(cfg, WL_P2P_DISC_ST_SCAN, 0, 0,
+				wl_to_p2p_bss_bssidx(cfg, P2PAPI_BSSCFG_DEVICE));
+		}
+	}
 
 #ifdef WL11U
 	/* handling DFS channel exceptions */
@@ -11908,6 +11914,10 @@ wl_tdls_event_handler(struct bcm_cfg80211 *cfg, bcm_struct_cfgdev *cfgdev,
 	struct net_device *ndev = NULL;
 	u32 reason = ntoh32(e->reason);
 	s8 *msg = NULL;
+#ifdef CUSTOMER_HW4
+	s32 ret = 0;
+	bool auto_on = true;
+#endif /* CUSTOMER_HW4 */
 
 	ndev = cfgdev_to_wlc_ndev(cfgdev, cfg);
 
@@ -11916,16 +11926,33 @@ wl_tdls_event_handler(struct bcm_cfg80211 *cfg, bcm_struct_cfgdev *cfgdev,
 		msg = " TDLS PEER DISCOVERD ";
 		break;
 	case WLC_E_TDLS_PEER_CONNECTED :
+#ifdef PCIE_FULL_DONGLE
+		dhd_tdls_update_peer_info(ndev, TRUE, (uint8 *)&e->addr.octet[0]);
+#endif /* PCIE_FULL_DONGLE */
 		msg = " TDLS PEER CONNECTED ";
 		break;
 	case WLC_E_TDLS_PEER_DISCONNECTED :
+#ifdef PCIE_FULL_DONGLE
+		dhd_tdls_update_peer_info(ndev, FALSE, (uint8 *)&e->addr.octet[0]);
+#endif /* PCIE_FULL_DONGLE */
 		msg = "TDLS PEER DISCONNECTED ";
 		break;
+#ifdef CUSTOMER_HW4
+	default :
+		auto_on = false;
+#endif /* CUSTOMER_HW4 */
 	}
 	if (msg) {
 		WL_ERR(("%s: " MACDBG " on %s ndev\n", msg, MAC2STRDBG((u8*)(&e->addr)),
 			(bcmcfg_to_prmry_ndev(cfg) == ndev) ? "primary" : "secondary"));
 	}
+#ifdef CUSTOMER_HW4
+	if (auto_on) {
+		ret = dhd_tdls_enable(ndev, true, true, NULL);
+		if (ret < 0)
+			WL_ERR(("enable tdls_auto_op failed. %d\n", ret));
+	}
+#endif /* CUSTOMER_HW4 */
 	return 0;
 
 }
@@ -11946,15 +11973,24 @@ wl_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device *dev,
 		memcpy(&info.ea, peer, ETHER_ADDR_LEN);
 	switch (oper) {
 	case NL80211_TDLS_DISCOVERY_REQ:
+#ifdef CUSTOMER_HW4
+		ret = dhd_tdls_reset_manual((dhd_pub_t *)(cfg->pub), dev);
+#else /* !CUSTOMER_HW4 */
 		/* turn on TDLS */
 		ret = dhd_tdls_enable(dev, true, false, NULL);
+#endif /* CUSTOMER_HW4 */
 		if (ret < 0)
 			return ret;
 		info.mode = TDLS_MANUAL_EP_DISCOVERY;
 		break;
 	case NL80211_TDLS_SETUP:
 		/* auto mode on */
+#ifdef CUSTOMER_HW4
+		ret = dhd_tdls_reset_manual((dhd_pub_t *)(cfg->pub), dev);
+		info.mode = TDLS_MANUAL_EP_CREATE;
+#else /* !CUSTOMER_HW4 */
 		ret = dhd_tdls_enable(dev, true, true, (struct ether_addr *)peer);
+#endif /* CUSTOMER_HW4 */
 		if (ret < 0)
 			return ret;
 		break;

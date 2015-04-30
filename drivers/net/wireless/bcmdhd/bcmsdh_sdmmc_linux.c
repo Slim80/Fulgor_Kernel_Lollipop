@@ -227,7 +227,7 @@ static int bcmsdh_sdmmc_suspend(struct device *pdev)
 	sd_err(("%s Enter\n", __FUNCTION__));
 	if (func->num != 2)
 		return 0;
-	dhd_mmc_suspend = TRUE;
+
 	sdioh = sdio_get_drvdata(func);
 	err = bcmsdh_suspend(sdioh->bcmsdh);
 	if (err)
@@ -248,6 +248,7 @@ static int bcmsdh_sdmmc_suspend(struct device *pdev)
 #if defined(OOB_INTR_ONLY) && !defined(CUSTOMER_HW4)
 	bcmsdh_oob_intr_set(sdioh->bcmsdh, FALSE);
 #endif /* OOB_INTR_ONLY && !CUSTOMER_HW4 */
+	dhd_mmc_suspend = TRUE;
 	smp_mb();
 
 	return 0;

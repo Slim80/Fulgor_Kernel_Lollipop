@@ -105,7 +105,7 @@
 				29 01 00 00 00 00 03 FC 5A 5A /* Level3 key Enable */
 				29 01 00 00 00 00 03 ED 0C 04 /* ERR_FG */
 				23 01 00 00 00 00 02 FF 01	   /* Hsync On */
-				29 01 00 00 00 00 03 FC A5 A5 /* Level3 key Disable */
+				29 01 00 00 0A 00 03 FC A5 A5 /* Level3 key Disable */
 			];
 		qcom,on-cmds-dsi-state = "dsi_hs_mode";
 		qcom,panel-off-cmds = [

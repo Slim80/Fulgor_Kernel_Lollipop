@@ -2556,6 +2556,7 @@ static int mipi_samsung_disp_send_cmd(
 				pr_info("%s : panel is off state!!\n", __func__);
 				goto unknown_command;
 			}
+			udelay(300);
 			break;
 		case PANEL_MTP_ENABLE:
 			cmd_desc = nv_enable_cmds.cmd_desc;
