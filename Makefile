@@ -165,6 +165,7 @@ CCACHE := ccache
 # line overrides the setting of ARCH below.  If a native build is happening,
 # then ARCH is assigned, getting whatever value it gets normally, and 
 # SUBARCH is subsequently ignored.
+ARCH := arm
 
 SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 				  -e s/arm.*/arm/ -e s/sa110/arm/ \
@@ -194,7 +195,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 export KBUILD_BUILDHOST := $(SUBARCH)
 ARCH		?= $(SUBARCH)
-CROSS_COMPILE	?= $(CCACHE) $(CONFIG_CROSS_COMPILE:"%"=%)
+CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -359,8 +360,7 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
 
 KERNEL_FLAGS	= -marm -mtune=cortex-a15 -mcpu=cortex-a15 -mfpu=neon-vfpv4 \
-                  -Wno-unused-variable -Wno-unused-function -Wno-sizeof-pointer-memaccess \
-		  -Wno-sequence-point -Wno-aggressive-loop-optimizations -fno-tree-vectorize \
+		  -mvectorize-with-neon-quad -fno-tree-vectorize \
 		  -fmodulo-sched -ffast-math -funsafe-math-optimizations
 
 CFLAGS_MODULE   = -DMODULE $(KERNEL_FLAGS)
@@ -383,6 +383,9 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
+		   -Wno-sizeof-pointer-memaccess \
+		   -Wno-aggressive-loop-optimizations \
+		   -Wno-sequence-point -Wno-unused-variable -Wno-unused-function \
 		   -fno-delete-null-pointer-checks \
 		   $(KERNEL_FLAGS)
 
